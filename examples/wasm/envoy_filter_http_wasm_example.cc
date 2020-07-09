@@ -55,6 +55,7 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
   }
   addResponseHeader("newheader", hello());
+  addResponseHeader("version", "recompile");
   replaceResponseHeader("location", "envoy-wasm");
   return FilterHeadersStatus::Continue;
 }
