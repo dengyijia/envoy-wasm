@@ -23,3 +23,10 @@ envoy_dependency_imports()
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 
 antlr_dependencies(471)
+
+# library from local directory
+new_local_repository(
+  name = "libadela",
+  path = "libadela",
+  build_file = "libadela.BUILD",
+)
