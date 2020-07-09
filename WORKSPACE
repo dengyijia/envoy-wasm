@@ -23,21 +23,3 @@ envoy_dependency_imports()
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 
 antlr_dependencies(471)
-
-# library from local
-#new_local_repository(
-#    name = "libadela",
-#    path = "/usr/local/google/home/kagura/libadela",
-#    build_file = "libadela.BUILD",
-#)
-
-# library from github
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "libinjection",
-    urls = ["https://github.com/client9/libinjection/archive/master.zip"],
-    sha256 = "dd1514589f71427db8034ca94dab6603d74ff07ab19af01a052bfff1d556d3a9",
-    build_file = "libinjection.BUILD",
-)
-~      
