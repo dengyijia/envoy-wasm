@@ -1,5 +1,5 @@
 cc_library(
    name = "libadela",
-   srcs = ["libadela.a", "hello-world.h"],
+   srcs = ["hello-world.cc", "hello-world.h"],
    visibility = ["//visibility:public"],
 )

@@ -33,7 +33,7 @@ static_resources:
                   runtime: "envoy.wasm.runtime.v8"
                   code:
                     local:
-                      filename: "../../bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm"
+                      filename: "/usr/local/google/home/kagura/envoy-wasm/bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm"
                   allow_precompiled: true
           - name: envoy.router
             config: {}
