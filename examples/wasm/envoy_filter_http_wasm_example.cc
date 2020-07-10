@@ -3,8 +3,8 @@
 #include <unordered_map>
 
 #include "proxy_wasm_intrinsics.h"
-#include "libinjection.h"
-#include "libinjection_sqli.h"
+#include "src/libinjection.h"
+#include "src/libinjection_sqli.h"
 
 class ExampleRootContext : public RootContext {
 public:
@@ -61,8 +61,20 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
 }
 
 FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool end_of_stream) {
-  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
-  LOG_ERROR(std::string("onRequestBody ") + std::string(body->view()));
+//  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
+//  auto body_str = std::string(body->view());
+//  LOG_ERROR(std::string("onRequestBody ") + body_str);
+/*  
+  struct libinjection_sqli_state state;
+  int issqli;
+
+  const char* input = const_cast<char*>(body_str.c_str());
+  libinjection_sqli_init(&state, input, body_buffer_length, FLAG_NONE);
+  issqli = libinjection_is_sqli(&state);
+  if (issqli) {
+      sendLocalResponse(403, "SQL injection detected", "", {{"fingerprint", state.fingerprint}});
+      return FilterDataStatus::StopIterationNoBuffer;
+  } */
   return FilterDataStatus::Continue;
 }
 
