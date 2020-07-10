@@ -26,6 +26,6 @@ antlr_dependencies(471)
 
 new_local_repository(
     name = "libinjection",
-    path = "/usr/local/google/home/kagura/libinjection",
+    path = "../libinjection",
     build_file = "libinjection.BUILD",
 )
