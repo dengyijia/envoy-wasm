@@ -61,10 +61,10 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
 }
 
 FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool end_of_stream) {
-//  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
-//  auto body_str = std::string(body->view());
-//  LOG_ERROR(std::string("onRequestBody ") + body_str);
-/*  
+  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
+  auto body_str = std::string(body->view());
+  LOG_ERROR(std::string("onRequestBody ") + body_str);
+
   struct libinjection_sqli_state state;
   int issqli;
 
@@ -72,10 +72,11 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   libinjection_sqli_init(&state, input, body_buffer_length, FLAG_NONE);
   issqli = libinjection_is_sqli(&state);
   if (issqli) {
-      sendLocalResponse(403, "SQL injection detected", "", {{"fingerprint", state.fingerprint}});
-      return FilterDataStatus::StopIterationNoBuffer;
-  } */
-  return FilterDataStatus::Continue;
+      sendLocalResponse(403, "SQL injection detected", body_str, {{"fingerprint", state.fingerprint}});
+  } else {
+      sendLocalResponse(200, "The SQL is fine", body_str, {});
+  }
+  return FilterDataStatus::StopIterationNoBuffer;
 }
 
 void ExampleContext::onDone() { LOG_WARN(std::string("onDone " + std::to_string(id()))); }
