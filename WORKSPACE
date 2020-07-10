@@ -23,3 +23,10 @@ envoy_dependency_imports()
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 
 antlr_dependencies(471)
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+http_archive(
+    name = "libinjection",
+    urls = ["https://github.com/client9/libinjection/archive/master.zip"],
+    build_file = "libinjection.BUILD",
+)

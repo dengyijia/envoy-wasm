@@ -3,6 +3,8 @@
 #include <unordered_map>
 
 #include "proxy_wasm_intrinsics.h"
+#include "libinjection.h"
+#include "libinjection_sqli.h"
 
 class ExampleRootContext : public RootContext {
 public:
@@ -53,7 +55,7 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
   for (auto& p : pairs) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
   }
-  addResponseHeader("branch", "master");
+  addResponseHeader("branch", "libinjection");
   replaceResponseHeader("location", "envoy-wasm");
   return FilterHeadersStatus::Continue;
 }
