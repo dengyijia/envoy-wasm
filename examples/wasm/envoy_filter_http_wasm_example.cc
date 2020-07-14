@@ -1,6 +1,7 @@
 // NOLINT(namespace-envoy)
 #include <string>
 #include <unordered_map>
+// #include <google/protobuf/util/json_util.h>
 
 #include "proxy_wasm_intrinsics.h"
 #include "src/libinjection.h"
@@ -18,12 +19,16 @@ public:
   explicit ExampleContext(uint32_t id, RootContext* root) : Context(id, root) {}
 
   void onCreate() override;
+  void onConfigure(size_t config_size) override;
   FilterHeadersStatus onRequestHeaders(uint32_t headers, bool end_of_stream) override;
   FilterDataStatus onRequestBody(size_t body_buffer_length, bool end_of_stream) override;
   FilterHeadersStatus onResponseHeaders(uint32_t headers, bool end_of_stream) override;
   void onDone() override;
   void onLog() override;
   void onDelete() override;
+
+private:
+  Config config;
 };
 static RegisterContextFactory register_ExampleContext(CONTEXT_FACTORY(ExampleContext),
                                                       ROOT_FACTORY(ExampleRootContext),
@@ -35,6 +40,26 @@ bool ExampleRootContext::onStart(size_t) {
 }
 
 void ExampleContext::onCreate() { LOG_WARN(std::string("onCreate " + std::to_string(id()))); }
+
+void ExampleContext::onConfigure(size_t config_size) {
+  // read configuration string from buffer
+  std::string configuration = "{}";
+  if (config_size > 0) {
+    auto configuration_data = getBufferBytes(WasmBufferType::PluginConfiguration, 0, config_size);
+    configuration = configuration_data->toString();
+  }
+
+  // parse configuration JSON string
+ // JsonParseOptions json_options;
+  //json_options.ignore_unknown_fields = true;
+  //Status status = JsonStringToMessage(configuration, &config, json_options);
+  //if (status != Status::OK) {
+  //  LOG_WARN("Cannot parse configuration JSON string " + configuration + ", " + status.message().ToString());
+  //  return false;
+  //}
+
+  //LOG_TRACE("onConfigure: " + configuration);
+}
 
 FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   LOG_DEBUG(std::string("onRequestHeaders ") + std::to_string(id()));
@@ -72,7 +97,7 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   libinjection_sqli_init(&state, input, body_buffer_length, FLAG_NONE);
   issqli = libinjection_is_sqli(&state);
   if (issqli) {
-      sendLocalResponse(403, "SQL injection detected", body_str, {{"fingerprint", state.fingerprint}});
+      sendLocalResponse(403, "SQL injection detected", std::string("fingerprint: ") + std::string(state.fingerprint), {});
   } else {
       sendLocalResponse(200, "The SQL is fine", body_str, {});
   }
