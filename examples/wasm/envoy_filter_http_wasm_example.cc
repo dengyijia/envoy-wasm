@@ -20,7 +20,6 @@ public:
   explicit ExampleContext(uint32_t id, RootContext* root) : Context(id, root) {}
 
   void onCreate() override;
-  //void onConfigure(size_t config_size) override;
   FilterHeadersStatus onRequestHeaders(uint32_t headers, bool end_of_stream) override;
   FilterDataStatus onRequestBody(size_t body_buffer_length, bool end_of_stream) override;
   FilterHeadersStatus onResponseHeaders(uint32_t headers, bool end_of_stream) override;
@@ -28,8 +27,6 @@ public:
   void onLog() override;
   void onDelete() override;
 
-//private:
-//  Config config;
 };
 static RegisterContextFactory register_ExampleContext(CONTEXT_FACTORY(ExampleContext),
                                                       ROOT_FACTORY(ExampleRootContext),
@@ -51,7 +48,7 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
   }
 
   // parse configuration JSON string
- // JsonParseOptions json_options;
+  // JsonParseOptions json_options;
   //json_options.ignore_unknown_fields = true;
   //Status status = JsonStringToMessage(configuration, &config, json_options);
   //if (status != Status::OK) {
