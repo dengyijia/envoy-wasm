@@ -28,7 +28,6 @@ static_resources:
               config:
                 name: "my_plugin"
                 root_id: "my_root_id"
-                configuration: {"@type": "type.googleapis.com/google.protobuf.Duration","value": "1.212s"}
                 vm_config:
                   vm_id: "my_vm_id"
                   runtime: "envoy.wasm.runtime.v8"
@@ -36,6 +35,15 @@ static_resources:
                     local:
                       filename: "/usr/local/google/home/kagura/dengyijia-envoy-wasm/bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm"
                   allow_precompiled: true
+                configuration:
+                  "@type": "type.googleapis.com/google.protobuf.StringValue"
+                  value: |
+                    {
+                      "query_param": {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "include": []
+                      }
+                    }
           - name: envoy.router
             config: {}
   - name: staticreply
