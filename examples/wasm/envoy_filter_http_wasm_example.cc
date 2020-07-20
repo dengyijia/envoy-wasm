@@ -53,12 +53,15 @@ struct Config {
   }
 };
 
-
+/*
+ * Check if the string val exists in the vector vec
+ */
 inline bool exists(std::string val, std::vector<std::string> vec) {
   return std::find(vec.begin(), vec.end(), val) != vec.end();
 }
 
 /*
+ * Validate and store a field in Config
  * Input:
  *   field: a json object to be parsed, either query param, header, or cookie
  *   include: a pointer to store the parsed result (<field_include in Config)
@@ -142,6 +145,7 @@ bool ExampleRootContext::onStart(size_t) {
 }
 
 bool ExampleRootContext::onConfigure(size_t config_size) {
+
   if (config_size == 0) {
     return true;
   }
@@ -175,9 +179,11 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
       return false;
     }
   }
+  // validate cookie configuration
   if (!validate_config_field(j["cookie"], &config.cookie_include, &config.cookies)) {
     return false;
   }
+  // validate header configuration
   if (!validate_config_field(j["header"], &config.header_include, &config.headers)) {
     return false;
   }
@@ -206,7 +212,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
   }
 
-  // record content type to context
+  // record body content type to context
   content_type = getRequestHeader("Content-Type")->toString();
 
   // find configured headers to detect sql injection
@@ -231,7 +237,9 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
     LOG_TRACE("onRequestHeaders: header " + header + "passed detection");
   }
 
-  // TODO 
+  // TODO  find configured cookies to detect sql injection
+  // TODO  detect sql injection in configured cookies
+  // TODO  detect sql injection in path
   return FilterHeadersStatus::Continue;
 }
 
@@ -243,7 +251,7 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
   for (auto& p : pairs) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
   }
-  addResponseHeader("branch", "libinjection");
+  addResponseHeader("branch", "libinjection-config");
   replaceResponseHeader("location", "envoy-wasm");
   return FilterHeadersStatus::Continue;
 }
@@ -253,7 +261,13 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   auto body_str = std::string(body->view());
   LOG_ERROR(std::string("onRequestBody ") + body_str);
 
-  //TODO check config
+  if (content_type.compare("application/x-www-form-urlencoded") != 0) {
+    return FilterDataStatus::Continue;
+  }
+
+  // TODO parse body string into param value pairs
+  // TODO find configured params to detect sql injection
+  // TODO detect sql injection in configured params
 
   if (detectSQLi(body_str)) {
       return FilterDataStatus::StopIterationNoBuffer;
