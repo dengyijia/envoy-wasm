@@ -15,14 +15,14 @@ Run tests for envoy to make sure the binary has been built successfully:
 
 ```bazel test //test/common/common/...```
 
-The source code for the WASM extension is in `examples/wasm`. Build the WASM module:
+The source code for the WASM extension is in `examples/wasm`. Build the WASM module with:
 
 ```bazel build //examples/wasm:envoy_filter_http_wasm_example.wasm```
 
 The WASM binary being built will be at
-`bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then Run the WASM module:
+`bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
 
-``` ``sudo bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c
+``` sudo bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c
 `pwd`/examples/wasm/envoy.yaml ```
 
 In a separate terminal, curl at `localhost:80` to interact with the running proxy.
@@ -32,17 +32,15 @@ The rules for SQL injection detection can be configured from the YAML file. An e
 
 ```
 {
-	“query_param”: 
-{
-	# detect sqli on all parameters but “foo”
-	“Content-Type”: “application/x-www-form-urlencoded”,
-		“exclude”: “foo”,
-},
-“header”:
-	{
-		# detect sqli on “bar”, “Referrer”, and “User-Agent”
-		“include”: “bar”,
-	},
+  “query_param”: {
+    # detect sqli on all parameters but “foo”
+    “Content-Type”: “application/x-www-form-urlencoded”,
+    “exclude”: [“foo”]
+   },
+   “header”: {
+     # detect sqli on “bar”, “Referrer”, and “User-Agent”
+     “include”: [“bar”]
+   }
 }
 ```
 There are three parts that can be configured for now: query parameters(`query_param`), cookies(`cookie`, not shown above), and headers(`header`). Configuration for all three parts are optional. If nothing is passed in a field, a default configuration based on ModSecurity rule 942100 will apply.
