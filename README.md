@@ -1,10 +1,10 @@
 # WAF extension on Envoy proxy
 
-This repository is forked from `envoyproxy/envoy-wasm`, and the example WASM
+This repository is forked from [`envoyproxy/envoy-wasm`](https://github.com/envoyproxy/envoy-wasm), and the example WASM
 extension in the envoy-wasm repository is modified to work as a Web Application Firewall(WAF) that
 can detect SQL injection. The rules for detection are aligned with ModSecurity
-rules 942100 and 942101, and SQL injection is detected with methods from
-libinjection.
+rules [942100](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L45) and [942101](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L1458), and SQL injection is detected with methods from
+[libinjection](https://github.com/client9/libinjection).
 
 ## Deployment
 From the root of the repository, build static binary of envoy proxy:
@@ -22,8 +22,7 @@ The source code for the WASM extension is in `examples/wasm`. Build the WASM mod
 The WASM binary being built will be at
 `bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
 
-``` sudo bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c
-`pwd`/examples/wasm/envoy.yaml ```
+``` sudo bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
 
 In a separate terminal, curl at `localhost:80` to interact with the running proxy.
 
