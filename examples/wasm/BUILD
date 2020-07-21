@@ -15,6 +15,7 @@ wasm_cc_binary(
         "@proxy_wasm_cpp_sdk//:proxy_wasm_intrinsics",
         "@libinjection//:libinjection",
         "@github_nlohmann_json//:json",
+        # "//source/common/http:utility_lib",
     ],
     linkstatic = 1,
 )

@@ -10,6 +10,7 @@
 #include "src/libinjection_sqli.h"
 
 using json = nlohmann::json;
+using QueryParams = std::map<std::string, std::string>;
 
 /*
  * Convert a config field to string
@@ -91,18 +92,102 @@ bool validate_config_field(json field, bool* include, std::vector<std::string>* 
 }
 
 /*
- * Detect SQL injection with libinjection method
+ * Methods for parsing query parameters
  */
-bool detectSQLi(std::string input) {
+QueryParams parseParameters(std::string data, size_t start, 
+                            std::string delim = "&", std::string eq = "=") {
+  QueryParams params;
+
+  while (start < data.size()) {
+    size_t end = data.find(delim, start);
+    if (end == std::string::npos) {
+      end = data.size();
+    }
+    std::string param = data.substr(start, end - start);
+
+    const size_t equal = param.find(eq);
+    if (equal != std::string::npos) {
+      params.emplace(param.substr(start, start + equal),
+                     param.substr(start + equal + 1, end));
+    } else {
+      params.emplace(param.substr(start, end), "");
+    }
+
+    start = end + 1;
+  }
+
+  return params;
+}
+
+QueryParams parsePath(std::string path) {
+  size_t start = path.find('?');
+  if (start == std::string::npos) {
+    QueryParams params;
+    return params;
+  }
+  start++;
+  return parseParameters(path, start);
+}
+
+QueryParams parseBody(std::string body) {
+  return parseParameters(body, 0);
+}
+
+QueryParams parseCookie(std::string cookie) {
+  return parseParameters(cookie, 0, "; ");
+}
+
+/*
+ * Detect SQL injection on given input string
+ */
+bool detectSQLi(std::string input, std::string key, std::string part) {
   struct libinjection_sqli_state state;
   char* input_char_str = const_cast<char*>(input.c_str());
   libinjection_sqli_init(&state, input_char_str, input.length(), FLAG_NONE);
 
   int issqli = libinjection_is_sqli(&state);
   if (issqli) {
-    sendLocalResponse(403, "SQL injection detected",
-                     std::string("fingerprint: ") + std::string(state.fingerprint), {});
+    std::string response_body = "SQL injection detected";
+    std::string response_log = "SQLi at " + part + "->" + key + ", fingerprint: "
+        + std::string(state.fingerprint);
+    sendLocalResponse(403, response_log, response_body, {});
     return true;
+  }
+  LOG_TRACE("detectSQLi: " + part + "->" + key + " passed detection");
+  return false;
+}
+
+/**
+ * Detect SQL injection on given parameter pairs with configuration
+ * Input
+ *  - params: a map of param key value pairs
+ *  - include: a boolean
+ *      if true, given keys are the only keys to detect
+ *      if false, given keys are all but the given keys will be detected
+ *  - keys: a vector of keys to be included or excluded
+ *  - part: name of the param part (header/body/cookie/path)
+ * Output
+ *   true if a SQL injection is detected, false if not
+ */
+bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::string> keys,
+                        std::string part) {
+  // find configured key to detect sql injection
+  std::vector<std::string> keys_to_inspect;
+  if (include) {
+    keys_to_inspect = keys;
+  } else {
+    for (auto param : params) {
+      if (exists(param.first, keys)) {
+        keys_to_inspect.push_back(param.first);
+      }
+    }
+  }
+
+  // detect sql injection in configured headers
+  for (auto key : keys_to_inspect) {
+    if (detectSQLi(params.at(key), key, part)) {
+      return true;
+    }
   }
   return false;
 }
@@ -198,6 +283,7 @@ void ExampleContext::onCreate() {
   // get config from root
   ExampleRootContext* root = dynamic_cast<ExampleRootContext*>(this->root());
   config = root->getConfig();
+  LOG_TRACE("onCreate: config loaded from root context ->" + config.to_string());
 }
 
 FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
@@ -207,39 +293,33 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   auto pairs = result->pairs();
 
   // log all headers
+  QueryParams headers;
   LOG_INFO(std::string("headers: ") + std::to_string(pairs.size()));
   for (auto& p : pairs) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
+    headers.emplace(p.first, p.second);
+  }
+  if (detectSQLiOnParams(headers, config.header_include, config.headers, "Header")) {
+      return FilterHeadersStatus::StopIteration;
   }
 
   // record body content type to context
   content_type = getRequestHeader("Content-Type")->toString();
 
-  // find configured headers to detect sql injection
-  std::vector<std::string> headers;
-  if (config.header_include) {
-    headers = config.headers;
-  } else {
-    for (auto& p : pairs) {
-      std::string header = std::string(p.first);
-      if (exists(header, config.headers)) {
-        headers.push_back(header);
-      }
-    }
+  // detect SQL injection in cookies
+  std::string cookie_str = getRequestHeader("Cookie")->toString();
+  QueryParams cookies = parseCookie(cookie_str);
+  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, "Cookie")) {
+    return FilterHeadersStatus::StopIteration;
   }
 
-  // detect sql injection in configured headers
-  for (auto header : headers) {
-    std::string value = getRequestHeader(header)->toString();
-    if (detectSQLi(value)) {
-      return FilterHeadersStatus::StopIteration;
-    }
-    LOG_TRACE("onRequestHeaders: header " + header + "passed detection");
+  // detect SQL injection in path
+  std::string path = getRequestHeader(":path")->toString();
+  QueryParams path_params = parsePath(path);
+  if (detectSQLiOnParams(cookies, false, {}, "Path")) {
+    return FilterHeadersStatus::StopIteration;
   }
 
-  // TODO  find configured cookies to detect sql injection
-  // TODO  detect sql injection in configured cookies
-  // TODO  detect sql injection in path
   return FilterHeadersStatus::Continue;
 }
 
@@ -265,11 +345,9 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
     return FilterDataStatus::Continue;
   }
 
-  // TODO parse body string into param value pairs
-  // TODO find configured params to detect sql injection
-  // TODO detect sql injection in configured params
-
-  if (detectSQLi(body_str)) {
+  // parse body string into param value pairs
+  auto query_params = parseBody(body_str);
+  if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
       return FilterDataStatus::StopIterationNoBuffer;
   }
   return FilterDataStatus::Continue;
