@@ -41,7 +41,7 @@ struct Config {
   std::vector<std::string> params {};
 
   bool header_include { true };
-  std::vector<std::string> headers { "Referrer", "User-Agent" };
+  std::vector<std::string> headers { "referer", "user-agent" };
 
   bool cookie_include { false };
   std::vector<std::string> cookies {};
@@ -94,7 +94,7 @@ bool validate_config_field(json field, bool* include, std::vector<std::string>* 
 /*
  * Methods for parsing query parameters
  */
-QueryParams parseParameters(std::string data, size_t start, 
+QueryParams parseParameters(std::string data, size_t start,
                             std::string delim = "&", std::string eq = "=") {
   QueryParams params;
 
@@ -137,6 +137,14 @@ QueryParams parseCookie(std::string cookie) {
   return parseParameters(cookie, 0, "; ");
 }
 
+std::string toString(QueryParams params) {
+  std::string str;
+  for (auto param : params) {
+    str += param.first + " -> " + param.second;
+  }
+  return str;
+}
+
 /*
  * Detect SQL injection on given input string
  */
@@ -171,6 +179,7 @@ bool detectSQLi(std::string input, std::string key, std::string part) {
  */
 bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::string> keys,
                         std::string part) {
+  LOG_TRACE("detect SQL injection on " + part);
   // find configured key to detect sql injection
   std::vector<std::string> keys_to_inspect;
   if (include) {
@@ -182,10 +191,13 @@ bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::strin
       }
     }
   }
-
   // detect sql injection in configured headers
   for (auto key : keys_to_inspect) {
-    if (detectSQLi(params.at(key), key, part)) {
+    auto param = params.find(key);
+    if (param == params.end()) {
+      continue;
+    }
+    if (detectSQLi(param->second, key, part)) {
       return true;
     }
   }
@@ -299,16 +311,19 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
     LOG_INFO(std::string(p.first) + std::string(" -> ") + std::string(p.second));
     headers.emplace(p.first, p.second);
   }
+  LOG_TRACE("all headers printed");
+
   if (detectSQLiOnParams(headers, config.header_include, config.headers, "Header")) {
       return FilterHeadersStatus::StopIteration;
   }
 
   // record body content type to context
-  content_type = getRequestHeader("Content-Type")->toString();
+  content_type = getRequestHeader("content-type")->toString();
 
   // detect SQL injection in cookies
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
+  LOG_TRACE("Cookies parsed: " + toString(cookies));
   if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, "Cookie")) {
     return FilterHeadersStatus::StopIteration;
   }
@@ -316,6 +331,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   // detect SQL injection in path
   std::string path = getRequestHeader(":path")->toString();
   QueryParams path_params = parsePath(path);
+  LOG_TRACE("Path parsed: " + toString(path_params));
   if (detectSQLiOnParams(cookies, false, {}, "Path")) {
     return FilterHeadersStatus::StopIteration;
   }
@@ -347,6 +363,7 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
 
   // parse body string into param value pairs
   auto query_params = parseBody(body_str);
+  LOG_TRACE("Query params parsed: " + toString(query_params));
   if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
       return FilterDataStatus::StopIterationNoBuffer;
   }
