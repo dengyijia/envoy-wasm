@@ -180,7 +180,7 @@ bool detectSQLi(std::string input, std::string key, std::string part) {
 bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::string> keys,
                         std::string part) {
   LOG_TRACE("detect SQL injection on " + part);
-  // find configured key to detect sql injection
+  // find configured headers to detect sql injection
   std::vector<std::string> keys_to_inspect;
   if (include) {
     keys_to_inspect = keys;
@@ -284,7 +284,6 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
   if (!validate_config_field(j["header"], &config.header_include, &config.headers)) {
     return false;
   }
-
   LOG_TRACE("onConfigure: config parsed into context ->" + config.to_string());
   return true;
 }
@@ -313,12 +312,10 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   }
   LOG_TRACE("all headers printed");
 
+  // detect SQL injection in headers
   if (detectSQLiOnParams(headers, config.header_include, config.headers, "Header")) {
       return FilterHeadersStatus::StopIteration;
   }
-
-  // record body content type to context
-  content_type = getRequestHeader("content-type")->toString();
 
   // detect SQL injection in cookies
   std::string cookie_str = getRequestHeader("Cookie")->toString();
@@ -336,7 +333,28 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
     return FilterHeadersStatus::StopIteration;
   }
 
+  // record body content type to context
+  content_type = getRequestHeader("content-type")->toString();
+
   return FilterHeadersStatus::Continue;
+}
+
+FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool end_of_stream) {
+  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
+  auto body_str = std::string(body->view());
+  LOG_ERROR(std::string("onRequestBody ") + body_str);
+
+  if (content_type.compare("application/x-www-form-urlencoded") != 0) {
+    return FilterDataStatus::Continue;
+  }
+
+  // detect SQL injection in query parameters
+  auto query_params = parseBody(body_str);
+  LOG_TRACE("Query params parsed: " + toString(query_params));
+  if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
+      return FilterDataStatus::StopIterationNoBuffer;
+  }
+  return FilterDataStatus::Continue;
 }
 
 FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
@@ -352,23 +370,6 @@ FilterHeadersStatus ExampleContext::onResponseHeaders(uint32_t, bool) {
   return FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool end_of_stream) {
-  auto body = getBufferBytes(WasmBufferType::HttpRequestBody, 0, body_buffer_length);
-  auto body_str = std::string(body->view());
-  LOG_ERROR(std::string("onRequestBody ") + body_str);
-
-  if (content_type.compare("application/x-www-form-urlencoded") != 0) {
-    return FilterDataStatus::Continue;
-  }
-
-  // parse body string into param value pairs
-  auto query_params = parseBody(body_str);
-  LOG_TRACE("Query params parsed: " + toString(query_params));
-  if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
-      return FilterDataStatus::StopIterationNoBuffer;
-  }
-  return FilterDataStatus::Continue;
-}
 
 void ExampleContext::onDone() { LOG_WARN(std::string("onDone " + std::to_string(id()))); }
 
