@@ -51,3 +51,13 @@ envoy_extension_cc_test(
         "@envoy_api//envoy/extensions/filters/http/wasm/v3:pkg_cc_proto",
     ],
 )
+
+envoy_extension_cc_test(
+   name = "waf_test",
+   srcs = ["wasm_WAF_test.cc"],
+   extension_name = "envoy.filters.http.wasm",
+   deps = [
+        "//source/extensions/filters/http/wasm:wasm_filter_lib",
+        "//test/test_common:wasm_lib",
+   ],
+)
