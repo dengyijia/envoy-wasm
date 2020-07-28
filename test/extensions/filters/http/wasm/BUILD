@@ -52,12 +52,15 @@ envoy_extension_cc_test(
     ],
 )
 
-envoy_extension_cc_test(
-   name = "waf_test",
-   srcs = ["wasm_WAF_test.cc"],
-   extension_name = "envoy.filters.http.wasm",
-   deps = [
-        "//source/extensions/filters/http/wasm:wasm_filter_lib",
-        "//test/test_common:wasm_lib",
-   ],
-)
+#envoy_extension_cc_test(
+#   name = "waf_test",
+#   srcs = ["wasm_WAF_test.cc"],
+#   extension_name = "envoy.filters.http.wasm",
+#   data = [
+#        "//test/extensions/filters/http/wasm/test_data:queue_cpp.wasm",
+#   ],
+#   deps = [
+#        "//source/extensions/filters/http/wasm:wasm_filter_lib",
+#        "//test/test_common:wasm_lib",
+#   ],
+#)
