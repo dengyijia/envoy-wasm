@@ -22,9 +22,17 @@ The source code for the WASM extension is in `examples/wasm`. Build the WASM mod
 The WASM binary being built will be at
 `bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
 
-``` sudo bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
+``` bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
 
-In a separate terminal, curl at `localhost:80` to interact with the running proxy.
+In a separate terminal, curl at `localhost:8000` to interact with the running proxy. For example, if you type the following command, you will receive a response with HTTP code 200 Okay, indicating that the request has passed SQL injection detection.
+``` curl -d "hello world" -v localhost:8000```
+If you instead put something suspicious in the body, for example, enter the
+following command:
+``` curl -d "val=-1%27+and+1%3D1%0D%0A" -v localhost:8000```
+You will receive a response with HTTP code 403 Forbidden. The body of the http
+request above has the parameter `val` with the value `-1' and 1=1` in URL
+encoding.
+
 
 ## Configuration
 The rules for SQL injection detection can be configured from the YAML file. An example of configuration can be found in `examples/wasm/envoy-config.yaml`. Configuration are passsed through the field `config.config.configuration.value` in the yaml file in JSON syntax as below:

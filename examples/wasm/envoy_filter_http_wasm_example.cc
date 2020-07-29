@@ -11,6 +11,7 @@
 
 using json = nlohmann::json;
 using QueryParams = std::map<std::string, std::string>;
+using urlencoded_type = "application/x-www-form-urlencoded";
 
 /*
  * Convert a config field to string
