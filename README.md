@@ -7,33 +7,50 @@ rules [942100](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/RE
 [libinjection](https://github.com/client9/libinjection).
 
 ## Environment
-Read ENVIRONMENT.md to set up the necessary environment for envoy proxy.
+Read [ENVIRONMENT.md](https://github.com/dengyijia/envoy-wasm/blob/dev/libinjection-config/ENVIRONMENT.md) to set up the necessary environment for envoy proxy.
 
 ## Deployment
 From the root of the repository, build static binary of envoy proxy:
 
-```bazel build -c opt //source/exe:envoy-static```
+```
+bazel build -c opt //source/exe:envoy-static
+```
 
 Run tests for envoy to make sure the binary has been built successfully:
 
-```bazel test //test/common/common/...```
+```
+bazel test //test/common/common/...
+```
 
 Before building the WASM module, make sure the [libinjection repository](https://github.com/client9/libinjection) is checked out in the parent directory of this envoy-wasm repository.
 
-The source code for the WASM extension is in `examples/wasm`. From the root of this repository, build the WASM module with:
+```
+cd ..
+git clone git@github.com:client9/libinjection.git
+cd envoy-wasm
+```
 
-```bazel build //examples/wasm:envoy_filter_http_wasm_example.wasm```
+The source code for the WASM extension is in `examples/wasm`. Build the WASM module with:
+
+```
+bazel build //examples/wasm:envoy_filter_http_wasm_example.wasm
+```
 
 The WASM binary being built will be at
 `bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
-
-```bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
+```
+bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` 
+```
 
 In a separate terminal, curl at `localhost:8000` to interact with the running proxy. For example, if you type the following command, you will receive a response with HTTP code 200 Okay, indicating that the request has passed SQL injection detection.
-``` curl -d "hello world" -v localhost:8000```
+```
+curl -d "hello world" -v localhost:8000
+```
 If you instead put something suspicious in the body, for example, enter the
 following command:
-``` curl -d "val=-1%27+and+1%3D1%0D%0A" -v localhost:8000```
+```
+curl -d "val=-1%27+and+1%3D1%0D%0A" -v localhost:8000
+```
 You will receive a response with HTTP code 403 Forbidden. The body of the http
 request above has the parameter `val` with the value `-1' and 1=1` in URL
 encoding.
