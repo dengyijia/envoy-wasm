@@ -11,7 +11,8 @@
 
 using json = nlohmann::json;
 using QueryParams = std::map<std::string, std::string>;
-using urlencoded_type = "application/x-www-form-urlencoded";
+
+const std::string URLENCODED = "application/x-www-form-urlencoded";
 
 /*
  * Convert a config field to string
@@ -36,7 +37,7 @@ std::string config_field_to_string(bool include, std::vector<std::string> params
  * If <filed>_include is false, <field>s contains the names to be excluded
  */
 struct Config {
-  std::string content_type { "application/x-www-form-urlencoded" };
+  std::string content_type { URLENCODED };
 
   bool param_include { false };
   std::vector<std::string> params {};
@@ -268,7 +269,7 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
       return false;
     }
     std::string content_type = query_param["Content-Type"].get<std::string>();
-    if (content_type.compare("application/x-www-form-urlencoded") != 0) {
+    if (content_type.compare(URLENCODED) != 0) {
       LOG_ERROR("onConfigure: invalid content type (" + content_type + ")\n");
       LOG_ERROR("onConfigure: only application/x-www-form-urlencoded is supported\n");
       return false;
