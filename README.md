@@ -22,7 +22,7 @@ The source code for the WASM extension is in `examples/wasm`. Build the WASM mod
 The WASM binary being built will be at
 `bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
 
-``` bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
+```bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` ```
 
 In a separate terminal, curl at `localhost:8000` to interact with the running proxy. For example, if you type the following command, you will receive a response with HTTP code 200 Okay, indicating that the request has passed SQL injection detection.
 ``` curl -d "hello world" -v localhost:8000```
