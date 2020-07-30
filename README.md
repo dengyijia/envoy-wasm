@@ -6,6 +6,9 @@ can detect SQL injection. The rules for detection are aligned with ModSecurity
 rules [942100](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L45) and [942101](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L1458), and SQL injection is detected with methods from
 [libinjection](https://github.com/client9/libinjection).
 
+## Environment
+Read ENVIRONMENT.md to set up the necessary environment for envoy proxy.
+
 ## Deployment
 From the root of the repository, build static binary of envoy proxy:
 
@@ -15,7 +18,9 @@ Run tests for envoy to make sure the binary has been built successfully:
 
 ```bazel test //test/common/common/...```
 
-The source code for the WASM extension is in `examples/wasm`. Build the WASM module with:
+Before building the WASM module, make sure the [libinjection repository](https://github.com/client9/libinjection) is checked out in the parent directory of this envoy-wasm repository.
+
+The source code for the WASM extension is in `examples/wasm`. From the root of this repository, build the WASM module with:
 
 ```bazel build //examples/wasm:envoy_filter_http_wasm_example.wasm```
 
