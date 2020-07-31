@@ -90,10 +90,11 @@ INSTANTIATE_TEST_SUITE_P(Runtimes, WasmWAFTest,
 #endif
                                          ));
 
-// Bad code in initial config.
 TEST_P(WasmWAFTest, EmptyConfig) {
-  setup("bad code");
-  EXPECT_EQ(wasm_, nullptr);
+  setup(TestEnvironment::readFileToStringForTest(TestEnvironment::substitute(
+      "{{ test_rundir }}/examples/wasm/envoy_filter_http_wasm_example.wasm")));
+  setupFilter();
+  EXPECT_CALL(filter(), log_(spdlog::level::trace, Eq(absl::string_view("onStart"))));
 }
 
 /*

@@ -28,7 +28,7 @@ static RegisterContextFactory register_ExampleContext(CONTEXT_FACTORY(ExampleCon
                                                       "my_root_id");
 
 bool ExampleRootContext::onStart(size_t) {
-  LOG_TRACE("onStart");
+  logTrace("onStart");
   return true;
 }
 
