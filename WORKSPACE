@@ -36,3 +36,12 @@ http_archive(
     urls = ["https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip",],
     build_file = "//:nlohmann_json.BUILD",
 )
+
+
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+git_repository(
+    name = "gtest",
+    remote = "https://github.com/google/googletest",
+    branch = "v1.10.x",
+)

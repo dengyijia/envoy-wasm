@@ -4,93 +4,20 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "nlohmann/json.hpp"
 #include "proxy_wasm_intrinsics.h"
+#include "nlohmann/json.hpp"
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
 
-using json = nlohmann::json;
+#include "examples/wasm/config.h"
+
 using QueryParams = std::map<std::string, std::string>;
-
-const std::string URLENCODED = "application/x-www-form-urlencoded";
-
-/*
- * Convert a config field to string
- */
-std::string config_field_to_string(bool include, std::vector<std::string> params) {
-  std::string str = "include: ";
-  if (!include) {
-    str = "exclude: ";
-  }
-  for (auto const& s : params) {
-    str += s + ", ";
-  }
-  return str;
-}
-
-/*
- * Keep track of config info
- * Three main fields: param(query param), header, cookie
- *
- * If <field>_include is true, <field>s contains the names to be included in
- * sql injection detection
- * If <filed>_include is false, <field>s contains the names to be excluded
- */
-struct Config {
-  std::string content_type { URLENCODED };
-
-  bool param_include { false };
-  std::vector<std::string> params {};
-
-  bool header_include { true };
-  std::vector<std::string> headers { "referer", "user-agent" };
-
-  bool cookie_include { false };
-  std::vector<std::string> cookies {};
-
-  std::string to_string() {
-    std::string param_str = "\nquery param " + config_field_to_string(param_include, params);
-    std::string header_str = "\nheaders " + config_field_to_string(header_include, headers);
-    std::string cookie_str = "\ncookies " + config_field_to_string(cookie_include, cookies);
-    return "config: " + content_type + param_str + header_str + cookie_str;
-  }
-};
 
 /*
  * Check if the string val exists in the vector vec
  */
 inline bool exists(std::string val, std::vector<std::string> vec) {
   return std::find(vec.begin(), vec.end(), val) != vec.end();
-}
-
-/*
- * Validate and store a field in Config
- * Input:
- *   field: a json object to be parsed, either query param, header, or cookie
- *   include: a pointer to store the parsed result (<field_include in Config)
- *   params: a pointer to store the parsed result (<field>s in Config)
- * Output:
- *   true on success
- *   false on failure (if both 'include' and 'exclude' are present in the field)
- */
-bool validate_config_field(json field, bool* include, std::vector<std::string>* params) {
-   if (field.is_null()) {
-     return true;
-   }
-   if (!field["include"].is_null() && !field["exclude"].is_null()) {
-     LOG_ERROR("onConfigure: \"include\" and \"exclude\" should not be used simultaneously");
-     return false;
-   }
-   if (!field["include"].is_null()) {
-     *include = true;
-     auto include_params = field["include"].get<std::vector<std::string>>();
-     params->insert(params->end(), include_params.begin(), include_params.end());
-   }
-   if (!field["exclude"].is_null()) {
-     *include = false;
-     *params = field["exclude"].get<std::vector<std::string>>();
-   }
-   return true;
 }
 
 /*
@@ -244,7 +171,6 @@ bool ExampleRootContext::onStart(size_t) {
 }
 
 bool ExampleRootContext::onConfigure(size_t config_size) {
-
   if (config_size == 0) {
     return true;
   }
@@ -253,40 +179,13 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
   auto configuration_data = getBufferBytes(WasmBufferType::PluginConfiguration, 0, config_size);
   std::string configuration = configuration_data->toString();
 
-  // parse configuration string as json
-  json j = json::parse(configuration, nullptr, false);
-  if (j.is_discarded()) {
-    LOG_ERROR("onConfigure: JSON parse error: " + configuration);
+  // parse configuration string into Config
+  std::string trace;
+  if (!parseConfig(configuration, &config, &trace)) {
+    LOG_ERROR("onConfigure: " + trace);
     return false;
   }
-  LOG_TRACE("onConfigure: " + configuration + ", length: " + std::to_string(config_size));
-
-  // validate query param configuration
-  auto query_param = j["query_param"];
-  if (!query_param.is_null()) {
-    if (query_param["Content-Type"].is_null()) {
-      LOG_ERROR("onConfigure: missing Content-Type field under query_param");
-      return false;
-    }
-    std::string content_type = query_param["Content-Type"].get<std::string>();
-    if (content_type.compare(URLENCODED) != 0) {
-      LOG_ERROR("onConfigure: invalid content type (" + content_type + ")\n");
-      LOG_ERROR("onConfigure: only application/x-www-form-urlencoded is supported\n");
-      return false;
-    }
-    if (!validate_config_field(query_param, &config.param_include, &config.params)) {
-      return false;
-    }
-  }
-  // validate cookie configuration
-  if (!validate_config_field(j["cookie"], &config.cookie_include, &config.cookies)) {
-    return false;
-  }
-  // validate header configuration
-  if (!validate_config_field(j["header"], &config.header_include, &config.headers)) {
-    return false;
-  }
-  LOG_TRACE("onConfigure: config parsed into context ->" + config.to_string());
+  LOG_TRACE("onConfigure: " + trace);
   return true;
 }
 
