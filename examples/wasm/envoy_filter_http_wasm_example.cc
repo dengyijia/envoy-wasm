@@ -5,132 +5,17 @@
 #include <unordered_set>
 
 #include "proxy_wasm_intrinsics.h"
-#include "nlohmann/json.hpp"
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
 
 #include "examples/wasm/config.h"
+#include "examples/wasm/query_param.h"
+#include "examples/wasm/sqli.h"
 
-using QueryParams = std::map<std::string, std::string>;
-
-/*
- * Check if the string val exists in the vector vec
- */
-inline bool exists(std::string val, std::vector<std::string> vec) {
-  return std::find(vec.begin(), vec.end(), val) != vec.end();
-}
-
-/*
- * Methods for parsing query parameters
- */
-QueryParams parseParameters(std::string data, size_t start,
-                            std::string delim = "&", std::string eq = "=") {
-  QueryParams params;
-
-  while (start < data.size()) {
-    size_t end = data.find(delim, start);
-    if (end == std::string::npos) {
-      end = data.size();
-    }
-    std::string param = data.substr(start, end - start);
-
-    const size_t equal = param.find(eq);
-    if (equal != std::string::npos) {
-      params.emplace(param.substr(start, start + equal),
-                     param.substr(start + equal + 1, end));
-    } else {
-      params.emplace(param.substr(start, end), "");
-    }
-
-    start = end + 1;
-  }
-
-  return params;
-}
-
-QueryParams parsePath(std::string path) {
-  size_t start = path.find('?');
-  if (start == std::string::npos) {
-    QueryParams params;
-    return params;
-  }
-  start++;
-  return parseParameters(path, start);
-}
-
-QueryParams parseBody(std::string body) {
-  return parseParameters(body, 0);
-}
-
-QueryParams parseCookie(std::string cookie) {
-  return parseParameters(cookie, 0, "; ");
-}
-
-std::string toString(QueryParams params) {
-  std::string str;
-  for (auto param : params) {
-    str += param.first + " -> " + param.second;
-  }
-  return str;
-}
-
-/*
- * Detect SQL injection on given input string
- */
-bool detectSQLi(std::string input, std::string key, std::string part) {
-  struct libinjection_sqli_state state;
-  char* input_char_str = const_cast<char*>(input.c_str());
-  libinjection_sqli_init(&state, input_char_str, input.length(), FLAG_NONE);
-
-  int issqli = libinjection_is_sqli(&state);
-  if (issqli) {
-    std::string response_body = "SQL injection detected";
-    std::string response_log = "SQLi at " + part + "->" + key + ", fingerprint: "
-        + std::string(state.fingerprint);
-    sendLocalResponse(403, response_log, response_body, {});
-    return true;
-  }
-  LOG_TRACE("detectSQLi: " + part + "->" + key + " passed detection");
-  return false;
-}
-
-/**
- * Detect SQL injection on given parameter pairs with configuration
- * Input
- *  - params: a map of param key value pairs
- *  - include: a boolean
- *      if true, given keys are the only keys to detect
- *      if false, given keys are all but the given keys will be detected
- *  - keys: a vector of keys to be included or excluded
- *  - part: name of the param part (header/body/cookie/path)
- * Output
- *   true if a SQL injection is detected, false if not
- */
-bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::string> keys,
-                        std::string part) {
-  LOG_TRACE("detect SQL injection on " + part);
-  // find configured headers to detect sql injection
-  std::vector<std::string> keys_to_inspect;
-  if (include) {
-    keys_to_inspect = keys;
-  } else {
-    for (auto param : params) {
-      if (exists(param.first, keys)) {
-        keys_to_inspect.push_back(param.first);
-      }
-    }
-  }
-  // detect sql injection in configured headers
-  for (auto key : keys_to_inspect) {
-    auto param = params.find(key);
-    if (param == params.end()) {
-      continue;
-    }
-    if (detectSQLi(param->second, key, part)) {
-      return true;
-    }
-  }
-  return false;
+void onSQLi(std::string part) {
+  std::string response_body = "SQL injection detected";
+  std::string response_log = "SQLi at " + part;
+  sendLocalResponse(403, response_log, response_body, {});
 }
 
 class ExampleRootContext : public RootContext {
@@ -214,15 +99,17 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   LOG_TRACE("all headers printed");
 
   // detect SQL injection in headers
-  if (detectSQLiOnParams(headers, config.header_include, config.headers, "Header")) {
-      return FilterHeadersStatus::StopIteration;
+  if (detectSQLiOnParams(headers, config.header_include, config.headers)) {
+    onSQLi("Header");
+    return FilterHeadersStatus::StopIteration;
   }
 
   // detect SQL injection in cookies
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
   LOG_TRACE("Cookies parsed: " + toString(cookies));
-  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, "Cookie")) {
+  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies)) {
+    onSQLi("Cookie");
     return FilterHeadersStatus::StopIteration;
   }
 
@@ -230,7 +117,8 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   std::string path = getRequestHeader(":path")->toString();
   QueryParams path_params = parsePath(path);
   LOG_TRACE("Path parsed: " + toString(path_params));
-  if (detectSQLiOnParams(cookies, false, {}, "Path")) {
+  if (detectSQLiOnParams(cookies, false, {})) {
+    onSQLi("path");
     return FilterHeadersStatus::StopIteration;
   }
 
@@ -252,8 +140,9 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   // detect SQL injection in query parameters
   auto query_params = parseBody(body_str);
   LOG_TRACE("Query params parsed: " + toString(query_params));
-  if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
-      return FilterDataStatus::StopIterationNoBuffer;
+  if (detectSQLiOnParams(query_params, config.param_include, config.params)) {
+    onSQLi("Query params");
+    return FilterDataStatus::StopIterationNoBuffer;
   }
   return FilterDataStatus::Continue;
 }
