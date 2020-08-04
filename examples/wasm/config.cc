@@ -60,13 +60,13 @@ bool parseConfig(std::string configuration, Config* config, std::string* trace) 
   // validate query param configuration
   auto query_param = j["query_param"];
   if (!query_param.is_null()) {
-    if (query_param["Content-Type"].is_null()) {
-      *trace = "missing Content-Type field under query_param";
+    if (query_param["content-type"].is_null()) {
+      *trace = "missing content-type field under query_param";
       return false;
     }
-    std::string content_type = query_param["Content-Type"].get<std::string>();
+    std::string content_type = query_param["content-type"].get<std::string>();
     if (content_type.compare(URLENCODED) != 0) {
-      *trace = ("invalid content type, only application/x-www-form-urlencoded is supported\n");
+      *trace = ("invalid content type, only application/x-www-form-urlencoded is supported");
       return false;
     }
     if (!validate_config_field(query_param, &config->param_include, &config->params, trace)) {
@@ -81,7 +81,7 @@ bool parseConfig(std::string configuration, Config* config, std::string* trace) 
   if (!validate_config_field(j["header"], &config->header_include, &config->headers, trace)) {
     return false;
   }
-  *trace = "onConfigure: config parsed into context ->" + config->to_string();
+  *trace = "config parsed into context ->" + config->to_string();
   return true;
 }
 
