@@ -65,12 +65,12 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
   std::string configuration = configuration_data->toString();
 
   // parse configuration string into Config
-  std::string trace;
-  if (!parseConfig(configuration, &config, &trace)) {
-    LOG_ERROR("onConfigure: " + trace);
+  std::string log;
+  if (!parseConfig(configuration, &config, &log)) {
+    LOG_ERROR("onConfigure: " + log);
     return false;
   }
-  LOG_TRACE("onConfigure: " + trace);
+  LOG_TRACE("onConfigure: " + log);
   return true;
 }
 

@@ -6,7 +6,8 @@
 
 #include "nlohmann/json.hpp"
 
-using json = nlohmann::json;
+using Json = nlohmann::json;
+using Keys = std::unordered_set<std::string>;
 const std::string URLENCODED = "application/x-www-form-urlencoded";
 
 
@@ -22,13 +23,13 @@ struct Config {
   std::string content_type { URLENCODED };
 
   bool param_include { false };
-  std::vector<std::string> params {};
+  Keys params {};
 
   bool header_include { true };
-  std::vector<std::string> headers { "referer", "user-agent" };
+  Keys headers { "referer", "user-agent" };
 
   bool cookie_include { false };
-  std::vector<std::string> cookies {};
+  Keys cookies {};
 
   std::string to_string();
 };

@@ -40,7 +40,7 @@ static_resources:
                   value: |
                     {
                       "query_param": {
-                        "Content-Type": "application/x-www-form-urlencoded",
+                        "content-type": "application/x-www-form-urlencoded",
                         "include": []
                       }
                     }
