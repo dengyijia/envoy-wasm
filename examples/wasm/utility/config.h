@@ -1,15 +1,7 @@
-// NOLINT(namespace-envoy)
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "examples/wasm/utility/common.h"
 #include "nlohmann/json.hpp"
 
 using Json = nlohmann::json;
-using Keys = std::unordered_set<std::string>;
-const std::string URLENCODED = "application/x-www-form-urlencoded";
-
 
 /*
  * Keep track of config info

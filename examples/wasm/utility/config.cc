@@ -1,4 +1,4 @@
-#include "examples/wasm/config.h"
+#include "examples/wasm/utility/config.h"
 
 std::string config_field_to_string(bool include, Keys keys) {
   std::string str = "include: ";

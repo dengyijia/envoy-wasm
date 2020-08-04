@@ -1,8 +1,4 @@
-// NOLINT(namespace-envoy)
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
+#include "common.h"
 
 using QueryParams = std::unordered_map<std::string, std::string>;
 

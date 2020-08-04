@@ -8,9 +8,9 @@
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
 
-#include "examples/wasm/config.h"
-#include "examples/wasm/query_param.h"
-#include "examples/wasm/sqli.h"
+#include "examples/wasm/utility/config.h"
+#include "examples/wasm/utility/query_param.h"
+#include "examples/wasm/utility/sqli.h"
 
 void onSQLi(std::string part) {
   std::string response_body = "SQL injection detected";

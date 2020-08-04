@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "config.h"
+#include "examples/wasm/utility/config.h"
 
 using ::testing::Eq;
 using ::testing::UnorderedElementsAreArray;

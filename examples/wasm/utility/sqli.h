@@ -1,13 +1,6 @@
-// NOLINT(namespace-envoy)
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "common.h"
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
-
-#include "query_param.h"
 
 /**
  * Detect SQL injection on given parameter pairs with configuration
@@ -21,4 +14,4 @@
  * Output
  *   true if a SQL injection is detected, false if not
  */
-bool detectSQLiOnParams(QueryParams params, bool include, std::vector<std::string> keys);
+bool detectSQLiOnParams(QueryParams params, bool include, Keys keys);
