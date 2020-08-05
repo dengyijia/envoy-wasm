@@ -9,10 +9,11 @@
 #include "src/libinjection_sqli.h"
 
 #include "examples/wasm/utility/config.h"
-#include "examples/wasm/utility/query_param.h"
+#include "examples/wasm/utility/query_parser.h"
 #include "examples/wasm/utility/sqli.h"
 
 void onSQLi(std::string part) {
+  LOG_ERROR("SQL injection detected");
   std::string response_body = "SQL injection detected";
   std::string response_log = "SQLi at " + part;
   sendLocalResponse(403, response_log, response_body, {});
@@ -98,29 +99,34 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   }
   LOG_TRACE("all headers printed");
 
+  std::string log;
+
   // detect SQL injection in headers
-  if (detectSQLiOnParams(headers, config.header_include, config.headers)) {
+  if (detectSQLiOnParams(headers, config.header_include, config.headers, &log)) {
     onSQLi("Header");
     return FilterHeadersStatus::StopIteration;
   }
+  LOG_TRACE("headers:\n" + log);
 
   // detect SQL injection in cookies
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
   LOG_TRACE("Cookies parsed: " + toString(cookies));
-  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies)) {
+  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, &log)) {
     onSQLi("Cookie");
     return FilterHeadersStatus::StopIteration;
   }
+  LOG_TRACE("cookies:\n" + log);
 
   // detect SQL injection in path
   std::string path = getRequestHeader(":path")->toString();
   QueryParams path_params = parsePath(path);
   LOG_TRACE("Path parsed: " + toString(path_params));
-  if (detectSQLiOnParams(cookies, false, {})) {
+  if (detectSQLiOnParams(cookies, false, {}, &log)) {
     onSQLi("path");
     return FilterHeadersStatus::StopIteration;
   }
+  LOG_TRACE("path:\n" + log);
 
   // record body content type to context
   content_type = getRequestHeader("content-type")->toString();
@@ -138,12 +144,14 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   }
 
   // detect SQL injection in query parameters
+  std::string log;
   auto query_params = parseBody(body_str);
-  LOG_TRACE("Query params parsed: " + toString(query_params));
-  if (detectSQLiOnParams(query_params, config.param_include, config.params)) {
+  LOG_TRACE("query params parsed: " + toString(query_params));
+  if (detectSQLiOnParams(query_params, config.param_include, config.params, &log)) {
     onSQLi("Query params");
-    return FilterDataStatus::StopIterationNoBuffer;
+    return FilterDataStatus::StopIterationAndBuffer;
   }
+  LOG_TRACE("body sqli detection finished:\n" + log);
   return FilterDataStatus::Continue;
 }
 

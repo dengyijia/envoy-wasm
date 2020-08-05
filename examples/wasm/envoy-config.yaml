@@ -40,8 +40,7 @@ static_resources:
                   value: |
                     {
                       "query_param": {
-                        "content-type": "application/x-www-form-urlencoded",
-                        "include": []
+                        "content-type": "application/x-www-form-urlencoded"
                       }
                     }
           - name: envoy.router

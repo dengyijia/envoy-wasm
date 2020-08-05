@@ -1,6 +1,11 @@
 #include "common.h"
+#include "query_parser.h"
+
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
+
+
+int detectSQLi(std::string input);
 
 /**
  * Detect SQL injection on given parameter pairs with configuration
@@ -14,4 +19,4 @@
  * Output
  *   true if a SQL injection is detected, false if not
  */
-bool detectSQLiOnParams(QueryParams params, bool include, Keys keys);
+bool detectSQLiOnParams(QueryParams params, bool include, Keys keys, std::string* log);

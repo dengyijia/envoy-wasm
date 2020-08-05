@@ -8,14 +8,13 @@ int detectSQLi(std::string input) {
 }
 
 
-bool detectSQLiOnParams(QueryParams params, bool include, Keys keys) {
-  // find configured headers to detect sql injection
+bool detectSQLiOnParams(QueryParams params, bool include, Keys keys, std::string* log) {
   Keys keys_to_inspect;
   if (include) {
     keys_to_inspect = keys;
   } else {
     for (auto param : params) {
-      if (keys.find(param.first) != keys.end()) {
+      if (keys.find(param.first) == keys.end()) {
         keys_to_inspect.insert(param.first);
       }
     }
@@ -29,6 +28,7 @@ bool detectSQLiOnParams(QueryParams params, bool include, Keys keys) {
     if (detectSQLi(param->second)) {
       return true;
     }
+    log->append("key [" + key + "] passed sqli detection\n");
   }
   return false;
 }
