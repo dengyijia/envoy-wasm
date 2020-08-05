@@ -1,7 +1,5 @@
 #include "common.h"
 
-using QueryParams = std::unordered_map<std::string, std::string>;
-
 std::string percentDecode(std::string encoded);
 
 QueryParams parsePath(std::string path);

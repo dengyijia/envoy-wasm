@@ -17,3 +17,13 @@ cc_test(
         "@gtest//:gtest_main"
     ]
 )
+
+cc_test(
+    name = "sqli_test",
+    srcs = ["sqli_test.cc"],
+    deps = [
+        "//examples/wasm/utility:sqli",
+        "@gtest//:gtest",
+        "@gtest//:gtest_main"
+    ]
+)

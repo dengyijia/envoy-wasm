@@ -25,7 +25,7 @@ bool detectSQLiOnParams(QueryParams params, bool include, Keys keys, std::string
     if (param == params.end()) {
       continue;
     }
-    if (detectSQLi(param->second)) {
+    if (detectSQLi(param->second) || detectSQLi(param->first)) {
       return true;
     }
     log->append("key [" + key + "] passed sqli detection\n");
