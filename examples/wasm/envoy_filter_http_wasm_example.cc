@@ -173,7 +173,7 @@ bool detectSQLi(std::string input, std::string key, std::string part) {
  *  - params: a map of param key value pairs
  *  - include: a boolean
  *      if true, given keys are the only keys to detect
- *      if false, given keys are all but the given keys will be detected
+ *      if false, all but the given keys will be detected
  *  - keys: a vector of keys to be included or excluded
  *  - part: name of the param part (header/body/cookie/path)
  * Output
