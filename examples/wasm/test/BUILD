@@ -8,3 +8,12 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "http_parser_test",
+    srcs = ["http_parser_test.cc"],
+    deps = [
+        "//examples/wasm/utility:http_parser",
+        "@gtest//:gtest",
+        "@gtest//:gtest_main"
+    ]
+)

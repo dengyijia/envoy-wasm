@@ -14,9 +14,9 @@ cc_library(
 )
 
 cc_library(
-    name = "query_parser",
-    srcs = ["query_parser.cc", "common.h"],
-    hdrs = ["query_parser.h"],
+    name = "http_parser",
+    srcs = ["http_parser.cc", "common.h"],
+    hdrs = ["http_parser.h"],
     visibility = ["//visibility:public"],
 )
 
@@ -24,10 +24,7 @@ cc_library(
     name = "sqli",
     srcs = ["sqli.cc", "common.h"],
     hdrs = ["sqli.h"],
-    deps = [
-        ":query_parser",
-        "@libinjection//:libinjection",
-    ],
+    deps = ["@libinjection//:libinjection"],
     visibility = ["//visibility:public"],
 )
 

@@ -1,6 +1,4 @@
 #include "common.h"
-#include "query_parser.h"
-
 #include "src/libinjection.h"
 #include "src/libinjection_sqli.h"
 

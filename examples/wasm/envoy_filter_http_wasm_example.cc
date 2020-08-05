@@ -9,7 +9,7 @@
 #include "src/libinjection_sqli.h"
 
 #include "examples/wasm/utility/config.h"
-#include "examples/wasm/utility/query_parser.h"
+#include "examples/wasm/utility/http_parser.h"
 #include "examples/wasm/utility/sqli.h"
 
 void onSQLi(std::string part) {

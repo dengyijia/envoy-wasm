@@ -15,7 +15,7 @@ wasm_cc_binary(
         "@proxy_wasm_cpp_sdk//:proxy_wasm_intrinsics",
         "//examples/wasm/utility:config",
         "//examples/wasm/utility:sqli",
-        "//examples/wasm/utility:query_parser",
+        "//examples/wasm/utility:http_parser",
     ],
     linkstatic = 1,
 )
