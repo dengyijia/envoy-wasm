@@ -212,10 +212,10 @@ public:
 
   bool onConfigure(size_t config_size) override;
   bool onStart(size_t) override;
-  Config getConfig() { return config; }
+  Config getConfig() { return config_; }
 
 private:
-  struct Config config;
+  struct Config config_;
 };
 
 class ExampleContext : public Context {
@@ -231,8 +231,8 @@ public:
   void onDelete() override;
 
 private:
-  std::string content_type;
-  struct Config config;
+  std::string content_type_;
+  struct Config config_;
 };
 static RegisterContextFactory register_ExampleContext(CONTEXT_FACTORY(ExampleContext),
                                                       ROOT_FACTORY(ExampleRootContext),
@@ -274,19 +274,19 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
       LOG_ERROR("onConfigure: only application/x-www-form-urlencoded is supported\n");
       return false;
     }
-    if (!validate_config_field(query_param, &config.param_include, &config.params)) {
+    if (!validate_config_field(query_param, &config_.param_include, &config_.params)) {
       return false;
     }
   }
   // validate cookie configuration
-  if (!validate_config_field(j["cookie"], &config.cookie_include, &config.cookies)) {
+  if (!validate_config_field(j["cookie"], &config_.cookie_include, &config_.cookies)) {
     return false;
   }
   // validate header configuration
-  if (!validate_config_field(j["header"], &config.header_include, &config.headers)) {
+  if (!validate_config_field(j["header"], &config_.header_include, &config_.headers)) {
     return false;
   }
-  LOG_TRACE("onConfigure: config parsed into context ->" + config.to_string());
+  LOG_TRACE("onConfigure: config parsed into context ->" + config_.to_string());
   return true;
 }
 
@@ -295,8 +295,8 @@ void ExampleContext::onCreate() {
 
   // get config from root
   ExampleRootContext* root = dynamic_cast<ExampleRootContext*>(this->root());
-  config = root->getConfig();
-  LOG_TRACE("onCreate: config loaded from root context ->" + config.to_string());
+  config_ = root->getConfig();
+  LOG_TRACE("onCreate: config loaded from root context ->" + config_.to_string());
 }
 
 FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
@@ -315,7 +315,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   LOG_TRACE("all headers printed");
 
   // detect SQL injection in headers
-  if (detectSQLiOnParams(headers, config.header_include, config.headers, "Header")) {
+  if (detectSQLiOnParams(headers, config_.header_include, config_.headers, "Header")) {
       return FilterHeadersStatus::StopIteration;
   }
 
@@ -323,7 +323,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
   LOG_TRACE("Cookies parsed: " + toString(cookies));
-  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, "Cookie")) {
+  if (detectSQLiOnParams(cookies, config_.cookie_include, config_.cookies, "Cookie")) {
     return FilterHeadersStatus::StopIteration;
   }
 
@@ -336,7 +336,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   }
 
   // record body content type to context
-  content_type = getRequestHeader("content-type")->toString();
+  content_type_ = getRequestHeader("content-type")->toString();
 
   return FilterHeadersStatus::Continue;
 }
@@ -346,14 +346,14 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   auto body_str = std::string(body->view());
   LOG_ERROR(std::string("onRequestBody ") + body_str);
 
-  if (content_type.compare("application/x-www-form-urlencoded") != 0) {
+  if (content_type_.compare("application/x-www-form-urlencoded") != 0) {
     return FilterDataStatus::Continue;
   }
 
   // detect SQL injection in query parameters
   auto query_params = parseBody(body_str);
   LOG_TRACE("Query params parsed: " + toString(query_params));
-  if (detectSQLiOnParams(query_params, config.param_include, config.params, "Query params")) {
+  if (detectSQLiOnParams(query_params, config_.param_include, config_.params, "Query params")) {
       return FilterDataStatus::StopIterationNoBuffer;
   }
   return FilterDataStatus::Continue;
