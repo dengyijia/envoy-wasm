@@ -3,7 +3,9 @@
 #include "src/libinjection_sqli.h"
 
 
-int detectSQLi(std::string input);
+bool detectSQLi(std::string input);
+
+Keys pickKeysForDetection(QueryParams params, bool include, Keys keys, std::string* log);
 
 /**
  * Detect SQL injection on given parameter pairs with configuration

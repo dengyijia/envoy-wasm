@@ -125,6 +125,10 @@ TEST(ConfigTest, QueryParams) {
 }
 
 TEST(ConfigTest, Header) {
+  // note that the config objects passed into the parser are initialized to
+  // default value. In default, the header field will include "user-agent" and
+  // "referer" according to ModSecurity rule 942100.
+
   bool result;
   std::string log;
 
