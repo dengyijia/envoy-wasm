@@ -28,31 +28,46 @@ std::string percentDecode(std::string encoded) {
   return decoded;
 }
 
+inline std::string slice(std::string str, int start, int end) {
+  return str.substr(start, end - start);
+}
 
-QueryParams parseParameters(std::string data, size_t start,
-                            std::string delim = "&", std::string eq = "=") {
+QueryParams parseParameters(std::string data, size_t start, bool cookie = false) {
   QueryParams params;
+  std::string delim = "&";
+  if (cookie) {
+    delim = ";";
+  }
 
   while (start < data.size()) {
     size_t end = data.find(delim, start);
     if (end == std::string::npos) {
       end = data.size();
     }
-    std::string param = data.substr(start, end - start);
+    std::string param = slice(data, start, end);
 
-    const size_t equal = param.find(eq);
+    const size_t equal = param.find('=');
     if (equal != std::string::npos) {
-      std::string key = percentDecode(param.substr(start, start + equal));
-      std::string val = percentDecode(param.substr(start + equal + 1, end));
+      std::string key = percentDecode(slice(data, start, start + equal));
+      std::string val = percentDecode(slice(data, start + equal + 1, end));
+
+      // if the data is cookie, remove outer quotes
+      if (cookie && val.size() >= 2 && val.back() == '"' && val[0] == '"') {
+        val = slice(val, 1, val.size() - 1);
+      }
+
       params.emplace(key, val);
     } else {
-      std::string key = percentDecode(param.substr(start, end));
+      std::string key = percentDecode(slice(data, start, end));
       params.emplace(key, "");
     }
 
-    start = end + 1;
+    if (cookie) {
+      start = data.find_first_not_of(" ", end + 1);
+    } else {
+      start = end + 1;
+    }
   }
-
   return params;
 }
 
@@ -71,7 +86,7 @@ QueryParams parseBody(std::string body) {
 }
 
 QueryParams parseCookie(std::string cookie) {
-  return parseParameters(cookie, 0, "; ");
+  return parseParameters(cookie, 0, true);
 }
 
 std::string toString(QueryParams params) {
