@@ -37,6 +37,7 @@ bool detectSQLiOnParams(QueryParams params, bool include, Keys keys, std::string
       log->append("-- SQL injection detected");
       return true;
     }
+
     log->append("key [" + key + "] passed detection\n");
   }
   return false;

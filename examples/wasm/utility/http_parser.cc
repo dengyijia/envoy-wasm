@@ -89,12 +89,3 @@ QueryParams parseCookie(std::string cookie) {
   return parseParameters(cookie, 0, true);
 }
 
-std::string toString(QueryParams params) {
-  std::string str;
-  for (auto param : params) {
-    str += param.first + " -> " + param.second;
-  }
-  return str;
-}
-
-
