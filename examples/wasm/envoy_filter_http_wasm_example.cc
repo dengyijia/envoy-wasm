@@ -19,6 +19,14 @@ void onSQLi(std::string part) {
   sendLocalResponse(403, response_log, response_body, {});
 }
 
+std::string printParams(QueryParams params) {
+  std::string str;
+  for (auto param : params) {
+    str += param.first + " -> " + param.second;
+  }
+  return str;
+}
+
 class ExampleRootContext : public RootContext {
 public:
   explicit ExampleRootContext(uint32_t id, StringView root_id) : RootContext(id, root_id) {}
@@ -111,9 +119,9 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   // detect SQL injection in cookies
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
-  LOG_TRACE("Cookies parsed: " + toString(cookies));
+  LOG_TRACE("Cookies parsed: " + printParams(cookies));
   if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, &log)) {
-    onSQLi("Cookie");
+    onSQLi("cookie");
     return FilterHeadersStatus::StopIteration;
   }
   LOG_TRACE("cookies:\n" + log);
@@ -121,7 +129,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   // detect SQL injection in path
   std::string path = getRequestHeader(":path")->toString();
   QueryParams path_params = parsePath(path);
-  LOG_TRACE("Path parsed: " + toString(path_params));
+  LOG_TRACE("Path parsed: " + printParams(path_params));
   if (detectSQLiOnParams(cookies, false, {}, &log)) {
     onSQLi("path");
     return FilterHeadersStatus::StopIteration;
@@ -146,9 +154,9 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   // detect SQL injection in query parameters
   std::string log;
   auto query_params = parseBody(body_str);
-  LOG_TRACE("query params parsed: " + toString(query_params));
+  LOG_TRACE("query params parsed: " + printParams(query_params));
   if (detectSQLiOnParams(query_params, config.param_include, config.params, &log)) {
-    onSQLi("Query params");
+    onSQLi("body query params");
     return FilterDataStatus::StopIterationAndBuffer;
   }
   LOG_TRACE("body sqli detection finished:\n" + log);
