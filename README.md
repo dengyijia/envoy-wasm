@@ -1,93 +1,86 @@
-![Envoy Logo](https://github.com/envoyproxy/artwork/blob/master/PNG/Envoy_Logo_Final_PANTONE.png)
+# WAF extension on Envoy proxy
 
-[Cloud-native high-performance edge/middle/service proxy](https://www.envoyproxy.io/)
+This repository is forked from [`envoyproxy/envoy-wasm`](https://github.com/envoyproxy/envoy-wasm), and the example WASM
+extension in the envoy-wasm repository is modified to work as a Web Application Firewall(WAF) that
+can detect SQL injection. The rules for detection are aligned with ModSecurity
+rules [942100](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L45) and [942101](https://github.com/coreruleset/coreruleset/blob/v3.3/dev/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf#L1458), and SQL injection is detected with methods from
+[libinjection](https://github.com/client9/libinjection).
 
-Envoy is hosted by the [Cloud Native Computing Foundation](https://cncf.io) (CNCF). If you are a
-company that wants to help shape the evolution of technologies that are container-packaged,
-dynamically-scheduled and microservices-oriented, consider joining the CNCF. For details about who's
-involved and how Envoy plays a role, read the CNCF
-[announcement](https://www.cncf.io/blog/2017/09/13/cncf-hosts-envoy/).
+## Environment
+Read [ENVIRONMENT.md](https://github.com/dengyijia/envoy-wasm/blob/dev/libinjection-config/ENVIRONMENT.md) to set up the necessary environment for envoy proxy.
 
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1266/badge)](https://bestpractices.coreinfrastructure.org/projects/1266)
-[![Azure Pipelines](https://dev.azure.com/cncf/envoy/_apis/build/status/11?branchName=master)](https://dev.azure.com/cncf/envoy/_build/latest?definitionId=11&branchName=master)
-[![CircleCI](https://circleci.com/gh/envoyproxy/envoy/tree/master.svg?style=shield)](https://circleci.com/gh/envoyproxy/envoy/tree/master)
-[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/envoy.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:envoy)
-[![Jenkins](https://img.shields.io/jenkins/s/https/powerci.osuosl.org/job/build-envoy-master/badge/icon/.svg?label=ppc64le%20build)](http://powerci.osuosl.org/job/build-envoy-master/)
+## Deployment
+From the root of the repository, build static binary of envoy proxy:
 
-## Documentation
+```
+bazel build -c opt //source/exe:envoy-static
+```
 
-* [Official documentation](https://www.envoyproxy.io/)
-* [FAQ](https://www.envoyproxy.io/docs/envoy/latest/faq/overview)
-* [Unofficial Chinese documentation](https://github.com/servicemesher/envoy/)
-* Watch [a video overview of Envoy](https://www.youtube.com/watch?v=RVZX4CwKhGE)
-([transcript](https://www.microservices.com/talks/lyfts-envoy-monolith-service-mesh-matt-klein/))
-to find out more about the origin story and design philosophy of Envoy
-* [Blog](https://medium.com/@mattklein123/envoy-threading-model-a8d44b922310) about the threading model
-* [Blog](https://medium.com/@mattklein123/envoy-hot-restart-1d16b14555b5) about hot restart
-* [Blog](https://medium.com/@mattklein123/envoy-stats-b65c7f363342) about stats architecture
-* [Blog](https://medium.com/@mattklein123/the-universal-data-plane-api-d15cec7a) about universal data plane API
-* [Blog](https://medium.com/@mattklein123/lyfts-envoy-dashboards-5c91738816b1) on Lyft's Envoy dashboards
+Run tests for envoy to make sure the binary has been built successfully:
 
-## Related
+```
+bazel test //test/common/common/...
+```
 
-* [data-plane-api](https://github.com/envoyproxy/data-plane-api): v2 API definitions as a standalone
-  repository. This is a read-only mirror of [api](api/).
-* [envoy-perf](https://github.com/envoyproxy/envoy-perf): Performance testing framework.
-* [envoy-filter-example](https://github.com/envoyproxy/envoy-filter-example): Example of how to add new filters
-  and link to the main repository.
+Before building the WASM module, make sure the [libinjection repository](https://github.com/client9/libinjection) is checked out in the parent directory of this envoy-wasm repository.
 
-## Contact
+```
+cd ..
+git clone git@github.com:client9/libinjection.git
+cd envoy-wasm
+```
 
-* [envoy-announce](https://groups.google.com/forum/#!forum/envoy-announce): Low frequency mailing
-  list where we will email announcements only.
-* [envoy-security-announce](https://groups.google.com/forum/#!forum/envoy-security-announce): Low frequency mailing
-  list where we will email security related announcements only.
-* [envoy-users](https://groups.google.com/forum/#!forum/envoy-users): General user discussion.
-* [envoy-dev](https://groups.google.com/forum/#!forum/envoy-dev): Envoy developer discussion (APIs,
-  feature design, etc.).
-* [envoy-maintainers](https://groups.google.com/forum/#!forum/envoy-maintainers): Use this list
-  to reach all core Envoy maintainers.
-* [Twitter](https://twitter.com/EnvoyProxy/): Follow along on Twitter!
-* [Slack](https://envoyproxy.slack.com/): Slack, to get invited go [here](https://envoyslack.cncf.io).
-  We have the IRC/XMPP gateways enabled if you prefer either of those. Once an account is created,
-  connection instructions for IRC/XMPP can be found [here](https://envoyproxy.slack.com/account/gateways).
-  * NOTE: Response to user questions is best effort on Slack. For a "guaranteed" response please email
-    envoy-users@ per the guidance in the following linked thread.
+The source code for the WASM extension is in `examples/wasm`. Build the WASM module with:
 
-Please see [this](https://groups.google.com/forum/#!topic/envoy-announce/l9zjYsnS3TY) email thread
-for information on email list usage.
+```
+bazel build //examples/wasm:envoy_filter_http_wasm_example.wasm
+```
 
-## Contributing
+The WASM binary being built will be at
+`bazel-bin/examples/wasm/envoy_filter_http_wasm_example.wasm`. Make sure that the `filename` path in `examples/wasm/envoy.yaml` matches the path to the WASM binary. Then run the WASM module:
+```
+bazel-bin/source/exe/envoy-static -l trace --concurrency 1 -c `` `pwd`/examples/wasm/envoy.yaml`` 
+```
 
-Contributing to Envoy is fun and modern C++ is a lot less scary than you might think if you don't
-have prior experience. To get started:
+In a separate terminal, curl at `localhost:8000` to interact with the running proxy. For example, if you type the following command, you will receive a response with HTTP code 200 Okay, indicating that the request has passed SQL injection detection.
+```
+curl -d "hello world" -v localhost:8000
+```
+If you instead put something suspicious in the body, for example, enter the
+following command:
+```
+curl -d "val=-1%27+and+1%3D1%0D%0A" -v localhost:8000
+```
+You will receive a response with HTTP code 403 Forbidden. The body of the http
+request above has the parameter `val` with the value `-1' and 1=1` in URL
+encoding.
 
-* [Contributing guide](CONTRIBUTING.md)
-* [Beginner issues](https://github.com/envoyproxy/envoy/issues?q=is%3Aopen+is%3Aissue+label%3Abeginner)
-* [Build/test quick start using docker](ci#building-and-running-tests-as-a-developer)
-* [Developer guide](DEVELOPER.md)
-* Consider installing the Envoy [development support toolchain](https://github.com/envoyproxy/envoy/blob/master/support/README.md), which helps automate parts of the development process, particularly those involving code review.
-* Please make sure that you let us know if you are working on an issue so we don't duplicate work!
 
-## Community Meeting
+## Configuration
+The rules for SQL injection detection can be configured from the YAML file. An example of configuration can be found in `examples/wasm/envoy-config.yaml`. Configuration are passsed through the field `config.config.configuration.value` in the yaml file in JSON syntax as below:
 
-The Envoy team meets twice per month on Tuesday, alternating between 9am PT and 5PM PT. The public
-Google calendar is here: https://goo.gl/PkDijT
+```
+{
+  “query_param”: {
+    # detect sqli on all parameters but “foo”
+    “Content-Type”: “application/x-www-form-urlencoded”,
+    “exclude”: [“foo”]
+   },
+   “header”: {
+     # detect sqli on “bar”, “Referrer”, and “User-Agent”
+     “include”: [“bar”]
+   }
+}
+```
+There are three parts that can be configured for now: query parameters(`query_param`), cookies(`cookie`, not shown above), and headers(`header`). Configuration for all three parts are optional. If nothing is passed in a field, a default configuration based on ModSecurity rule 942100 will apply. ModSecurity rule 942101 requires SQL injection detection on path of request. Configuration for path will be updated later.
 
-* Meeting minutes are [here](https://goo.gl/5Cergb)
-* Recorded videos are posted [here](https://www.youtube.com/channel/UCvqbFHwN-nwalWPjPUKpvTA/videos?view=0&sort=dd&shelf_id=1)
+### Query Parameters
+The "Content-Type" field is required in query parameters configuration, Currently, the WASM module only supports SQL injection detection for the content type "application/x-www-form-urlencoded" (it has the syntax `param=value&param2=value2`). If the incoming http request has a different content type, detection on its body will be skipped.
 
-## Security
+In default setting, all query parameter names and values will be checked for SQL injection. To change this setting, you can either add an `include` or an `exclude` field. Both take a list of parameter names. If `include` is present, only the parameters in the list will be checked. If `exclude` is present, all but the parameters in the list will be checked. `include` and `exclude` are not expected to be present at the same time.
 
-### Security Audit
+### Headers
+In default setting, the `Referrer` and `User-Agent` headers will be checked for SQL injection. The `include` and `exclude` fields work similarly as above, except that `Referrer` and `User-Agent` will always be checked unless explicitly enlisted in `exlude`.
 
-A third party security audit was performed by Cure53, you can see the full report [here](docs/SECURITY_AUDIT.pdf).
-
-### Reporting security vulnerabilities
-
-If you've found a vulnerability or a potential vulnerability in Envoy please let us know at
-[envoy-security](mailto:envoy-security@googlegroups.com). We'll send a confirmation
-email to acknowledge your report, and we'll send an additional email when we've identified the issue
-positively or negatively.
-
-For further details please see our complete [security release process](SECURITY.md).
+### Cookies
+In default setting, all cookie names will be checked. `include` and `exclude` work exactly the same as for query parameters.
