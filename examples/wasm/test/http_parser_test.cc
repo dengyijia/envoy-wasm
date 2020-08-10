@@ -7,7 +7,7 @@ using ::testing::Eq;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::IsEmpty;
 
-MATCHER_P(ParamsEq, expected_params, toString(expected_params)) {
+MATCHER_P(ParamsEq, expected_params, "params does not match") {
   if (expected_params.size() != arg.size()) {
     return false;
   }

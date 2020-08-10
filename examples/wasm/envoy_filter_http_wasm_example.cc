@@ -33,10 +33,10 @@ public:
 
   bool onConfigure(size_t config_size) override;
   bool onStart(size_t) override;
-  Config getConfig() { return config; }
+  Config getConfig() { return config_; }
 
 private:
-  struct Config config;
+  struct Config config_;
 };
 
 class ExampleContext : public Context {
@@ -52,8 +52,8 @@ public:
   void onDelete() override;
 
 private:
-  std::string content_type;
-  struct Config config;
+  std::string content_type_;
+  struct Config config_;
 };
 static RegisterContextFactory register_ExampleContext(CONTEXT_FACTORY(ExampleContext),
                                                       ROOT_FACTORY(ExampleRootContext),
@@ -75,7 +75,7 @@ bool ExampleRootContext::onConfigure(size_t config_size) {
 
   // parse configuration string into Config
   std::string log;
-  if (!parseConfig(configuration, &config, &log)) {
+  if (!parseConfig(configuration, &config_, &log)) {
     LOG_ERROR("onConfigure: " + log);
     return false;
   }
@@ -88,8 +88,8 @@ void ExampleContext::onCreate() {
 
   // get config from root
   ExampleRootContext* root = dynamic_cast<ExampleRootContext*>(this->root());
-  config = root->getConfig();
-  LOG_TRACE("onCreate: config loaded from root context ->" + config.to_string());
+  config_ = root->getConfig();
+  LOG_TRACE("onCreate: config loaded from root context ->" + config_.to_string());
 }
 
 FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
@@ -110,7 +110,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   std::string log;
 
   // detect SQL injection in headers
-  if (detectSQLiOnParams(headers, config.header_include, config.headers, &log)) {
+  if (detectSQLiOnParams(headers, config_.header_include, config_.headers, &log)) {
     onSQLi("Header");
     return FilterHeadersStatus::StopIteration;
   }
@@ -120,7 +120,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   std::string cookie_str = getRequestHeader("Cookie")->toString();
   QueryParams cookies = parseCookie(cookie_str);
   LOG_TRACE("Cookies parsed: " + printParams(cookies));
-  if (detectSQLiOnParams(cookies, config.cookie_include, config.cookies, &log)) {
+  if (detectSQLiOnParams(cookies, config_.cookie_include, config_.cookies, &log)) {
     onSQLi("cookie");
     return FilterHeadersStatus::StopIteration;
   }
@@ -137,7 +137,7 @@ FilterHeadersStatus ExampleContext::onRequestHeaders(uint32_t, bool) {
   LOG_TRACE("path:\n" + log);
 
   // record body content type to context
-  content_type = getRequestHeader("content-type")->toString();
+  content_type_ = getRequestHeader("content-type")->toString();
 
   return FilterHeadersStatus::Continue;
 }
@@ -147,7 +147,7 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   auto body_str = std::string(body->view());
   LOG_ERROR(std::string("onRequestBody ") + body_str);
 
-  if (content_type.compare("application/x-www-form-urlencoded") != 0) {
+  if (content_type_.compare("application/x-www-form-urlencoded") != 0) {
     return FilterDataStatus::Continue;
   }
 
@@ -155,7 +155,7 @@ FilterDataStatus ExampleContext::onRequestBody(size_t body_buffer_length, bool e
   std::string log;
   auto query_params = parseBody(body_str);
   LOG_TRACE("query params parsed: " + printParams(query_params));
-  if (detectSQLiOnParams(query_params, config.param_include, config.params, &log)) {
+  if (detectSQLiOnParams(query_params, config_.param_include, config_.params, &log)) {
     onSQLi("body query params");
     return FilterDataStatus::StopIterationAndBuffer;
   }

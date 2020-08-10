@@ -6,6 +6,9 @@ std::string percentDecode(std::string encoded) {
   decoded.reserve(encoded.size());
   for (size_t i = 0; i < encoded.size(); ++i) {
     char ch = encoded[i];
+    if (ch == '+') {
+      ch = ' ';
+    }
     if (ch == '%' && i + 2 < encoded.size()) {
       const char& hi = encoded[i + 1];
       const char& lo = encoded[i + 2];
